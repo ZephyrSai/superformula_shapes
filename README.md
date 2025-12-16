@@ -142,21 +142,11 @@ To contribute:
 - [Three.js Documentation](https://threejs.org/docs/)
 - [Johan Gielis's Research](http://www.genicap.com/)
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - Johan Gielis for the superformula
 - Three.js team for the amazing 3D library
 - The mathematical visualization community
-
-## 📧 Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
-
-Project Link: [https://github.com/yourusername/3d-superformula](https://github.com/yourusername/3d-superformula)
 
 ---
 
