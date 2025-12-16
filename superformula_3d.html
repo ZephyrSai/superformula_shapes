@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Superformula Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #canvas-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #controls {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .param-group {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .param-group:last-child {
+            border-bottom: none;
+        }
+        
+        .param-group h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .value {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button-group button {
+            margin-bottom: 0;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #555;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+        
+        .toggle-container label {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+        
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider-toggle {
+            background-color: #667eea;
+        }
+        
+        input:checked + .slider-toggle:before {
+            transform: translateX(26px);
+        }
+        
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .preset-btn {
+            padding: 8px;
+            font-size: 13px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        #notification {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(102, 126, 234, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        #notification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-container">
+            <div id="info">
+                🖱️ Left click + drag: Rotate | Right click + drag: Pan | Scroll: Zoom
+            </div>
+            <div id="notification"></div>
+        </div>
+        <div id="controls">
+            <h1>🎨 Superformula 3D</h1>
+            
+            <button id="randomBtn">🎲 Generate Random Shape</button>
+            <div class="button-group">
+                <button id="resetBtn">↺ Reset</button>
+                <button id="exportSTL">💾 Export STL</button>
+            </div>
+            <div class="button-group">
+                <button id="screenshot">📸 Screenshot</button>
+                <button id="animateBtn">🎬 Animate</button>
+            </div>
+            
+            <div class="param-group">
+                <h2>⚙️ View Options</h2>
+                <div class="toggle-container">
+                    <label>Auto Rotate</label>
+                    <label class="switch">
+                        <input type="checkbox" id="autoRotate">
+                        <span class="slider-toggle"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <label>Wireframe</label>
+                    <label class="switch">
+                        <input type="checkbox" id="wireframe">
+                        <span class="slider-toggle"></span>
+                    </label>
+                </div>
+                <label>Color Scheme</label>
+                <select id="colorScheme">
+                    <option value="rainbow">Rainbow</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="forest">Forest</option>
+                    <option value="fire">Fire</option>
+                    <option value="purple">Purple</option>
+                </select>
+            </div>
+            
+            <div class="param-group">
+                <h2>🎯 Presets</h2>
+                <div class="preset-grid">
+                    <button class="preset-btn" data-preset="star">⭐ Star</button>
+                    <button class="preset-btn" data-preset="flower">🌸 Flower</button>
+                    <button class="preset-btn" data-preset="crystal">💎 Crystal</button>
+                    <button class="preset-btn" data-preset="shell">🐚 Shell</button>
+                    <button class="preset-btn" data-preset="sphere">⚪ Sphere</button>
+                    <button class="preset-btn" data-preset="cube">◼️ Cube</button>
+                </div>
+            </div>
+            
+            <div class="param-group">
+                <h2>Latitude Parameters (φ)</h2>
+                <div class="slider-container">
+                    <label>
+                        <span>m₁ (symmetry)</span>
+                        <span class="value" id="m1-val">7</span>
+                    </label>
+                    <input type="range" id="m1" min="0" max="20" step="0.1" value="7">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>n1₁</span>
+                        <span class="value" id="n11-val">1</span>
+                    </label>
+                    <input type="range" id="n11" min="0.1" max="10" step="0.1" value="1">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>n2₁</span>
+                        <span class="value" id="n21-val">2</span>
+                    </label>
+                    <input type="range" id="n21" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>n3₁</span>
+                        <span class="value" id="n31-val">2</span>
+                    </label>
+                    <input type="range" id="n31" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>a₁</span>
+                        <span class="value" id="a1-val">1</span>
+                    </label>
+                    <input type="range" id="a1" min="0.1" max="3" step="0.1" value="1">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>b₁</span>
+                        <span class="value" id="b1-val">1</span>
+                    </label>
+                    <input type="range" id="b1" min="0.1" max="3" step="0.1" value="1">
+                </div>
+            </div>
+            
+            <div class="param-group">
+                <h2>Longitude Parameters (θ)</h2>
+                <div class="slider-container">
+                    <label>
+                        <span>m₂ (symmetry)</span>
+                        <span class="value" id="m2-val">7</span>
+                    </label>
+                    <input type="range" id="m2" min="0" max="20" step="0.1" value="7">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>n1₂</span>
+                        <span class="value" id="n12-val">1</span>
+                    </label>
+                    <input type="range" id="n12" min="0.1" max="10" step="0.1" value="1">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>n2₂</span>
+                        <span class="value" id="n22-val">2</span>
+                    </label>
+                    <input type="range" id="n22" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>n3₂</span>
+                        <span class="value" id="n32-val">2</span>
+                    </label>
+                    <input type="range" id="n32" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>a₂</span>
+                        <span class="value" id="a2-val">1</span>
+                    </label>
+                    <input type="range" id="a2" min="0.1" max="3" step="0.1" value="1">
+                </div>
+                <div class="slider-container">
+                    <label>
+                        <span>b₂</span>
+                        <span class="value" id="b2-val">1</span>
+                    </label>
+                    <input type="range" id="b2" min="0.1" max="3" step="0.1" value="1">
+                </div>
+            </div>
+            
+            <div class="param-group">
+                <h2>Mesh Settings</h2>
+                <div class="slider-container">
+                    <label>
+                        <span>Resolution</span>
+                        <span class="value" id="res-val">64</span>
+                    </label>
+                    <input type="range" id="resolution" min="16" max="128" step="8" value="64">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, mesh, controls;
+        let autoRotateEnabled = false;
+        let animationId = null;
+        
+        const params = {
+            m1: 7, n11: 1, n21: 2, n31: 2, a1: 1, b1: 1,
+            m2: 7, n12: 1, n22: 2, n32: 2, a2: 1, b2: 1,
+            resolution: 64
+        };
+        
+        const defaultParams = {...params};
+        
+        const presets = {
+            star: { m1: 5, n11: 2, n21: 7, n31: 7, a1: 1, b1: 1, m2: 5, n12: 2, n22: 7, n32: 7, a2: 1, b2: 1 },
+            flower: { m1: 8, n11: 1, n21: 4, n31: 8, a1: 1, b1: 1, m2: 8, n12: 1, n22: 4, n32: 8, a2: 1, b2: 1 },
+            crystal: { m1: 6, n11: 0.5, n21: 1.7, n31: 1.7, a1: 1, b1: 1, m2: 6, n12: 0.5, n22: 1.7, n32: 1.7, a2: 1, b2: 1 },
+            shell: { m1: 3, n11: 4.5, n21: 10, n31: 10, a1: 1, b1: 1, m2: 4, n12: 2, n22: 2, n32: 2, a2: 1, b2: 1 },
+            sphere: { m1: 4, n11: 2, n21: 2, n31: 2, a1: 1, b1: 1, m2: 4, n12: 2, n22: 2, n32: 2, a2: 1, b2: 1 },
+            cube: { m1: 4, n11: 0.2, n21: 0.2, n31: 0.2, a1: 1, b1: 1, m2: 4, n12: 0.2, n22: 0.2, n32: 0.2, a2: 1, b2: 1 }
+        };
+        
+        const colorSchemes = {
+            rainbow: (t) => new THREE.Color().setHSL(t * 0.5 + 0.5, 0.8, 0.6),
+            sunset: (t) => new THREE.Color().setHSL(0.05 + t * 0.1, 0.9, 0.5 + t * 0.2),
+            ocean: (t) => new THREE.Color().setHSL(0.55 + t * 0.1, 0.7, 0.4 + t * 0.3),
+            forest: (t) => new THREE.Color().setHSL(0.3 + t * 0.1, 0.6, 0.3 + t * 0.3),
+            fire: (t) => new THREE.Color().setHSL(0.08 - t * 0.08, 0.95, 0.5 + t * 0.2),
+            purple: (t) => new THREE.Color().setHSL(0.75 + t * 0.1, 0.7, 0.5 + t * 0.2)
+        };
+        
+        let currentColorScheme = 'rainbow';
+        
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            camera = new THREE.PerspectiveCamera(
+                75,
+                container.clientWidth / container.clientHeight,
+                0.1,
+                1000
+            );
+            camera.position.z = 3;
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight1.position.set(5, 5, 5);
+            scene.add(dirLight1);
+            
+            const dirLight2 = new THREE.DirectionalLight(0x667eea, 0.4);
+            dirLight2.position.set(-5, -5, -5);
+            scene.add(dirLight2);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 1;
+            controls.maxDistance = 10;
+            
+            createMesh();
+            setupControls();
+            animate();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        function superformula(angle, m, n1, n2, n3, a, b) {
+            const t1 = Math.abs(Math.cos(m * angle / 4) / a);
+            const t2 = Math.abs(Math.sin(m * angle / 4) / b);
+            const t3 = Math.pow(t1, n2) + Math.pow(t2, n3);
+            const r = Math.pow(t3, -1 / n1);
+            return isFinite(r) ? r : 0;
+        }
+        
+        function createGeometry() {
+            const res = params.resolution;
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const indices = [];
+            const colors = [];
+            
+            let maxRadius = 0;
+            const tempVertices = [];
+            
+            for (let i = 0; i <= res; i++) {
+                const theta = (i / res) * Math.PI;
+                const r1 = superformula(theta, params.m1, params.n11, params.n21, params.n31, params.a1, params.b1);
+                
+                for (let j = 0; j <= res; j++) {
+                    const phi = (j / res) * 2 * Math.PI;
+                    const r2 = superformula(phi, params.m2, params.n12, params.n22, params.n32, params.a2, params.b2);
+                    
+                    const x = r1 * Math.sin(theta) * r2 * Math.cos(phi);
+                    const y = r1 * Math.cos(theta);
+                    const z = r1 * Math.sin(theta) * r2 * Math.sin(phi);
+                    
+                    const radius = Math.sqrt(x * x + y * y + z * z);
+                    if (isFinite(radius)) {
+                        maxRadius = Math.max(maxRadius, radius);
+                    }
+                    
+                    tempVertices.push({ x, y, z, t: j / res });
+                }
+            }
+            
+            const scale = maxRadius > 0 ? 2 / maxRadius : 1;
+            
+            for (const v of tempVertices) {
+                vertices.push(v.x * scale, v.y * scale, v.z * scale);
+                const color = colorSchemes[currentColorScheme](v.t);
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            for (let i = 0; i < res; i++) {
+                for (let j = 0; j < res; j++) {
+                    const a = i * (res + 1) + j;
+                    const b = a + res + 1;
+                    const c = a + 1;
+                    const d = b + 1;
+                    
+                    indices.push(a, b, c);
+                    indices.push(b, d, c);
+                }
+            }
+            
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geometry.computeVertexNormals();
+            
+            return geometry;
+        }
+        
+        function createMesh() {
+            if (mesh) {
+                scene.remove(mesh);
+                mesh.geometry.dispose();
+                mesh.material.dispose();
+            }
+            
+            const geometry = createGeometry();
+            const material = new THREE.MeshPhongMaterial({
+                vertexColors: true,
+                shininess: 100,
+                side: THREE.DoubleSide,
+                flatShading: false,
+                wireframe: document.getElementById('wireframe').checked
+            });
+            
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+        }
+        
+        function setupControls() {
+            Object.keys(params).forEach(key => {
+                const slider = document.getElementById(key.replace(/(\d)/, '$1'));
+                const valueSpan = document.getElementById(key.replace(/(\d)/, '$1') + '-val');
+                
+                if (slider) {
+                    slider.value = params[key];
+                    if (valueSpan) valueSpan.textContent = params[key];
+                    
+                    slider.addEventListener('input', (e) => {
+                        const value = parseFloat(e.target.value);
+                        params[key] = value;
+                        if (valueSpan) valueSpan.textContent = value.toFixed(1);
+                        createMesh();
+                    });
+                }
+            });
+            
+            document.getElementById('randomBtn').addEventListener('click', randomize);
+            document.getElementById('resetBtn').addEventListener('click', reset);
+            document.getElementById('exportSTL').addEventListener('click', exportToSTL);
+            document.getElementById('screenshot').addEventListener('click', takeScreenshot);
+            document.getElementById('animateBtn').addEventListener('click', toggleAnimation);
+            
+            document.getElementById('autoRotate').addEventListener('change', (e) => {
+                autoRotateEnabled = e.target.checked;
+            });
+            
+            document.getElementById('wireframe').addEventListener('change', (e) => {
+                if (mesh) {
+                    mesh.material.wireframe = e.target.checked;
+                }
+            });
+            
+            document.getElementById('colorScheme').addEventListener('change', (e) => {
+                currentColorScheme = e.target.value;
+                createMesh();
+            });
+            
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    loadPreset(btn.dataset.preset);
+                });
+            });
+        }
+        
+        function loadPreset(name) {
+            const preset = presets[name];
+            if (preset) {
+                Object.assign(params, preset);
+                updateSliders();
+                createMesh();
+                showNotification(`Loaded ${name} preset!`);
+            }
+        }
+        
+        function randomize() {
+            params.m1 = Math.random() * 20;
+            params.m2 = Math.random() * 20;
+            params.n11 = 0.2 + Math.random() * 8;
+            params.n12 = 0.2 + Math.random() * 8;
+            params.n21 = 0.2 + Math.random() * 8;
+            params.n22 = 0.2 + Math.random() * 8;
+            params.n31 = 0.2 + Math.random() * 8;
+            params.n32 = 0.2 + Math.random() * 8;
+            params.a1 = 0.5 + Math.random() * 2;
+            params.a2 = 0.5 + Math.random() * 2;
+            params.b1 = 0.5 + Math.random() * 2;
+            params.b2 = 0.5 + Math.random() * 2;
+            
+            updateSliders();
+            createMesh();
+            showNotification('Random shape generated!');
+        }
+        
+        function reset() {
+            Object.assign(params, defaultParams);
+            updateSliders();
+            createMesh();
+            showNotification('Reset to defaults');
+        }
+        
+        function toggleAnimation() {
+            if (animationId) {
+                clearInterval(animationId);
+                animationId = null;
+                document.getElementById('animateBtn').textContent = '🎬 Animate';
+                showNotification('Animation stopped');
+            } else {
+                let step = 0;
+                animationId = setInterval(() => {
+                    step += 0.02;
+                    params.m1 = 5 + Math.sin(step) * 5;
+                    params.m2 = 5 + Math.cos(step * 0.7) * 5;
+                    params.n11 = 1 + Math.sin(step * 0.5) * 2;
+                    params.n12 = 1 + Math.cos(step * 0.5) * 2;
+                    updateSliders();
+                    createMesh();
+                }, 50);
+                document.getElementById('animateBtn').textContent = '⏸️ Stop';
+                showNotification('Animation started!');
+            }
+        }
+        
+        function exportToSTL() {
+            if (!mesh) return;
+            
+            const geometry = mesh.geometry;
+            const vertices = geometry.attributes.position.array;
+            const indices = geometry.index.array;
+            
+            let stl = 'solid shape\n';
+            
+            for (let i = 0; i < indices.length; i += 3) {
+                const i1 = indices[i] * 3;
+                const i2 = indices[i + 1] * 3;
+                const i3 = indices[i + 2] * 3;
+                
+                const v1 = new THREE.Vector3(vertices[i1], vertices[i1 + 1], vertices[i1 + 2]);
+                const v2 = new THREE.Vector3(vertices[i2], vertices[i2 + 1], vertices[i2 + 2]);
+                const v3 = new THREE.Vector3(vertices[i3], vertices[i3 + 1], vertices[i3 + 2]);
+                
+                const normal = new THREE.Vector3()
+                    .crossVectors(
+                        new THREE.Vector3().subVectors(v2, v1),
+                        new THREE.Vector3().subVectors(v3, v1)
+                    ).normalize();
+                
+                stl += `  facet normal ${normal.x} ${normal.y} ${normal.z}\n`;
+                stl += '    outer loop\n';
+                stl += `      vertex ${v1.x} ${v1.y} ${v1.z}\n`;
+                stl += `      vertex ${v2.x} ${v2.y} ${v2.z}\n`;
+                stl += `      vertex ${v3.x} ${v3.y} ${v3.z}\n`;
+                stl += '    endloop\n';
+                stl += '  endfacet\n';
+            }
+            
+            stl += 'endsolid shape\n';
+            
+            const blob = new Blob([stl], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'superformula_shape.stl';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('STL file exported!');
+        }
+        
+        function takeScreenshot() {
+            const dataURL = renderer.domElement.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = 'superformula_screenshot.png';
+            a.click();
+            showNotification('Screenshot saved!');
+        }
+        
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+        
+        function updateSliders() {
+            Object.keys(params).forEach(key => {
+                const slider = document.getElementById(key.replace(/(\d)/, '$1'));
+                const valueSpan = document.getElementById(key.replace(/(\d)/, '$1') + '-val');
+                
+                if (slider) {
+                    slider.value = params[key];
+                    if (valueSpan) valueSpan.textContent = params[key].toFixed(1);
+                }
+            });
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (autoRotateEnabled && mesh) {
+                mesh.rotation.y += 0.005;
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        THREE.OrbitControls = function(camera, domElement) {
+            this.camera = camera;
+            this.domElement = domElement;
+            this.enabled = true;
+            this.minDistance = 0;
+            this.maxDistance = Infinity;
+            this.enableDamping = false;
+            this.dampingFactor = 0.05;
+            
+            const scope = this;
+            const STATE = { NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2 };
+            let state = STATE.NONE;
+            
+            const spherical = new THREE.Spherical();
+            const sphericalDelta = new THREE.Spherical();
+            let scale = 1;
+            const panOffset = new THREE.Vector3();
+            
+            const rotateStart = new THREE.Vector2();
+            const rotateEnd = new THREE.Vector2();
+            const rotateDelta = new THREE.Vector2();
+            
+            const panStart = new THREE.Vector2();
+            const panEnd = new THREE.Vector2();
+            const panDelta = new THREE.Vector2();
+            
+            const offset = new THREE.Vector3();
+            const target = new THREE.Vector3();
+            
+            function onMouseDown(e) {
+                if (!scope.enabled) return;
+                e.preventDefault();
+                
+                if (e.button === 0) {
+                    state = STATE.ROTATE;
+                    rotateStart.set(e.clientX, e.clientY);
+                } else if (e.button === 2) {
+                    state = STATE.PAN;
+                    panStart.set(e.clientX, e.clientY);
+                }
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+            
+            function onMouseMove(e) {
+                if (!scope.enabled) return;
+                e.preventDefault();
+                
+                if (state === STATE.ROTATE) {
+                    rotateEnd.set(e.clientX, e.clientY);
+                    rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(0.005);
+                    sphericalDelta.theta -= rotateDelta.x;
+                    sphericalDelta.phi -= rotateDelta.y;
+                    rotateStart.copy(rotateEnd);
+                } else if (state === STATE.PAN) {
+                    panEnd.set(e.clientX, e.clientY);
+                    panDelta.subVectors(panEnd, panStart).multiplyScalar(0.001);
+                    pan(panDelta.x, panDelta.y);
+                    panStart.copy(panEnd);
+                }
+            }
+            
+            function onMouseUp() {
+                if (!scope.enabled) return;
+                state = STATE.NONE;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            
+            function onMouseWheel(e) {
+                if (!scope.enabled) return;
+                e.preventDefault();
+                if (e.deltaY < 0) scale /= 0.95;
+                else scale *= 0.95;
+            }
+            
+            function pan(deltaX, deltaY) {
+                const element = scope.domElement;
+                offset.copy(scope.camera.position).sub(target);
+                let targetDistance = offset.length();
+                targetDistance *= Math.tan((scope.camera.fov / 2) * Math.PI / 180);
+                
+                const right = new THREE.Vector3();
+                right.setFromMatrixColumn(scope.camera.matrix, 0);
+                right.multiplyScalar(-2 * deltaX * targetDistance / element.clientHeight);
+                panOffset.add(right);
+                
+                const up = new THREE.Vector3();
+                up.setFromMatrixColumn(scope.camera.matrix, 1);
+                up.multiplyScalar(2 * deltaY * targetDistance / element.clientHeight);
+                panOffset.add(up);
+            }
+            
+            this.update = function() {
+                offset.copy(scope.camera.position).sub(target);
+                spherical.setFromVector3(offset);
+                
+                if (scope.enableDamping) {
+                    spherical.theta += sphericalDelta.theta * scope.dampingFactor;
+                    spherical.phi += sphericalDelta.phi * scope.dampingFactor;
+                    sphericalDelta.theta *= (1 - scope.dampingFactor);
+                    sphericalDelta.phi *= (1 - scope.dampingFactor);
+                } else {
+                    spherical.theta += sphericalDelta.theta;
+                    spherical.phi += sphericalDelta.phi;
+                    sphericalDelta.set(0, 0, 0);
+                }
+                
+                spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, spherical.phi));
+                spherical.radius *= scale;
+                spherical.radius = Math.max(scope.minDistance, Math.min(scope.maxDistance, spherical.radius));
+                
+                target.add(panOffset);
+                panOffset.multiplyScalar(scope.enableDamping ? 1 - scope.dampingFactor : 0);
+                scale = 1;
+                
+                offset.setFromSpherical(spherical);
+                scope.camera.position.copy(target).add(offset);
+                scope.camera.lookAt(target);
+            };
+            
+            domElement.addEventListener('mousedown', onMouseDown);
+            domElement.addEventListener('wheel', onMouseWheel);
+            domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+        };
+        
+        init();
+    </script>
+</body>
+</html>
