@@ -4,6 +4,8 @@ An interactive web application for generating and exploring 3D shapes using the 
 
 ![Superformula Demo](https://img.shields.io/badge/Three.js-r128-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
+https://zephyrsai.github.io/superformula_shapes/
+
 ## ✨ Features
 
 - **Interactive 3D Visualization**: Pan, tilt, and zoom with intuitive mouse controls
